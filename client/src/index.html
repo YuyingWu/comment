@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Comment</title>
+    <!-- <link rel="stylesheet" href="http://cdn.bootcss.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous"> -->
+    <link rel="stylesheet" type="text/css" href="/app/main.css">
+</head>
+<body>
+<section id="wgt-comment" data-permalink="/archives/year-2016/">
+	<h2>Responses</h2>
+
+	<form id="comment-form" class="comment__form">
+		<label for="author">
+			<span>Authur: </span>
+			<input type="text" 
+				name="author" 
+				class="comment-author" 
+				required 
+				max-length="15">
+		</label>
+		<label for="content">
+			<span>Content: </span>
+			<input type="text" 
+				name="content" 
+				class="comment-content" 
+				required
+				max-length="150">
+		</label>
+		<!-- <label>
+			<span>Email: </span>
+			<input type="email" name="email">
+		</label>
+		<label>
+			<span>website: </span>
+			<input type="url" name="website">
+		</label> -->
+
+		<a id="comment-box-submit">提交</a>
+	</form>
+
+	<div id="comment-list">
+		<article>暂无数据</article>
+	</div>
+</section>
+<script src="http://cdn1.lncld.net/static/js/2.1.4/av-min.js"></script>
+<script src="http://apps.bdimg.com/libs/zepto/1.1.4/zepto.min.js"></script>
+<script src="http://cdn.bootcss.com/moment.js/2.18.1/moment.min.js"></script>
+<!-- <script src="/comment/dist/app/bundle.js"></script> -->
+<script src="/app/bundle.js"></script>
+</body>
+</html>
