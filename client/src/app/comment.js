@@ -18,13 +18,14 @@ class Comment {
 	constructor(props) {
 		// default props
 		this.props = Object.assign({
-			dbComment: 'Comment',
-			dbReply: 'Reply'
+			dbComment: 'Comment'
 		}, props);
 
 		if(!this.checkSetup()){
 			return;
 		}
+
+		this.comments = {};
 
 		// initialize
 		this.init(props);
@@ -63,11 +64,18 @@ class Comment {
 		var query = new AV.Query(this.props.dbComment);
 
 		query.equalTo('permalink', this.props.permalink);
-		query.descending('createdAt');
+		// query.descending('createdAt');
 
 		query.find().then(results => {
-			this.list = this.formatData(results);
-			this.render(this.list);
+			const list = this.formatData(results);
+
+			// cache
+			list.map(c => {
+				this.comments[c.id] = c;
+			});
+			console.log(this.comments);
+
+			this.render(list);
 		}, function (error) {
 			console.log('query error');
 		});
@@ -87,8 +95,45 @@ class Comment {
 			}
 		});
 
+		const commentForm = $('#comment-form');
+
+		$('#comment-list').on('click', '.btn-reply', function(e) {
+			e.preventDefault();
+
+			const element = $(this);
+			const displayContent = element.data('content');
+
+			// 滚到回复框
+			window.location.href = "#comment-form";
+
+			// 插入回复内容
+			if($('.comment__replyComment').length){
+				$('.comment__replyComment').find('pre').html(displayContent);
+			}else{
+				$('<div class="comment--clearfix comment--mb10 comment--fontsizeMeta comment__replyComment"/>').html(`
+					<span class="comment--grid-r comment__replyCancel">x</span>
+					<pre>${ displayContent }</pre>
+				`).insertBefore(commentForm);
+			}
+
+			// 更新parentId
+			commentForm.find('[name="parentId"]').val(element.data('id'));
+
+			console.log(commentForm.find('[name="parentId"]').val());
+		});
+
+		$('#wgt-comment').on('click', '.comment__replyCancel', function(){
+			const replyComment = $(this).parent('.comment__replyComment');
+
+			// 更新parentId
+			commentForm.find('[name="parentId"]').val('');
+			replyComment.remove();
+
+			console.log(commentForm.find('[name="parentId"]').val());
+		});
+
 		// 回复
-		$('#comment-list').on('click', '.btn-reply', function(e){
+		/*$('#comment-list').on('click', '.btn-reply', function(e){
 			e.preventDefault();
 
 			const element = $(this);
@@ -160,7 +205,7 @@ class Comment {
 			}else{
 				console.log('invalid input');
 			}
-		});
+		});*/
 	}
 	validate(params) {
 		let result = false;
@@ -189,11 +234,12 @@ class Comment {
 			e.preventDefault();
 
 			const params = formElement.serializeArray();
-
+console.log(params);
+return;
 			if(this.validate(params)){
 				this.submitParams(params, (data) => {
 					this.saveToDB(this.props.dbComment, data, (comment) => {
-						$('#comment-list').prepend(this.commentSingle(this.formatData(comment), 'comment__item'));
+						$('#comment-list').append(this.commentSingle(this.formatData(comment), 'comment__item'));
 					}, (error) => {
 						this.errorDeal(error);
 					});
@@ -295,17 +341,44 @@ class Comment {
 		}
 	}
 	commentSingle(item, className) {
+		let parentContent = '';
+		const pId = item.parentId;
+
+		if(pId){
+			const c = this.comments[pId];
+			let pContent = '';
+
+			if(c && c.content){
+				pContent = c.content;
+
+				if(pContent.length > 20){
+					pContent = pContent.substring(0, 20) + '...';
+				}
+			}
+
+			parentContent = `
+				<blockquote class="comment--fontsizeMeta comment__quote">
+					<p>${ pContent }
+						<span class="comment--colorAccent">${ c.author }</span>
+					</p>
+				</blockquote>
+			`;
+		}
+
 		return `
 			<div class="${className}" id="comment-${item.id}">
 				<article>
-					<div class="comment--clearfix">
-						<a href="#" class="comment--fontsizeMeta comment--colorAccent comment--grid-r btn-reply" data-id="${item.id}">回复</a>
-						<div class="comment--grid">
-							<span class="comment--colorAccent comment--fontsizeMeta comment__item--author">${item.author} </span>
-							<time class="comment--colorMeta comment--fontsizeMeta comment__item--time">${ moment(item.createdAt).fromNow() }</time>
-						</div>
-					</div>
-					<pre class="comment__content">${item.content}</pre>
+					<header class="comment__header">
+						<span class="comment--colorAccent comment--fontsizeMeta comment__item--author">${item.author} </span>
+						<time class="comment--colorMeta comment--fontsizeMeta comment__item--time">${ moment(item.createdAt).format('MM-DD-YYYY hh:mm:ss') }</time>
+					</header>
+					<section class="comment--mt10">
+						${parentContent}
+						<pre class="comment__content">${item.content}</pre>
+					</section>
+					<footer class="comment--tRight">
+						<a href="#" class="comment--fontsizeMeta comment--colorAccent btn-reply" data-id="${item.id}" data-content="${item.content.substring(0, 20)}">回复</a>
+					</footer>
 				</article>
 			</div>
 		`;
@@ -335,31 +408,6 @@ class Comment {
 		});
 
 		$('#comment-list').html(tpl);
-
-		this.renderReplies();
-	}
-	renderReplies(callback) {
-		var query = new AV.Query(this.props.dbReply);
-
-		query.equalTo('permalink', this.props.permalink);
-
-		query.find().then(results => {
-			results = this.formatData(results);
-
-			results.map(item => {
-				const parentElement = $('#comment-' + item.parentId);
-				// const commentBlock = parentElement.find('article')[0];
-
-				if(parentElement.length){
-					parentElement.append(this.commentSingle(item, 'comment__reply'));
-
-					// 回复按时间倒序排
-					// $(this.commentSingle(item, 'comment__item comment__reply')).insertAfter($(commentBlock));
-				}
-			});
-		}, function (error) {
-			console.log('query error');
-		});
 	}
 }
 

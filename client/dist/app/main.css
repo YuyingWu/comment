@@ -1,0 +1,60 @@
+/* reset */
+.wgt-comment p,
+.wgt-comment pre {
+  margin: 0;
+}
+/* comment */
+/* base */
+.comment--colorAccent {
+  color: #00ab6b;
+}
+.comment--colorMeta {
+  color: #8F8F8F;
+}
+.comment--fontsizeMeta {
+  font-size: 12px;
+}
+.comment--grid {
+  float: left;
+}
+.comment--grid-r {
+  float: right;
+}
+.comment--clearfix:after {
+  display: block;
+  clear: both;
+  overflow: hidden;
+  height: 0;
+  content: '';
+}
+.comment--mt10 {
+  margin-top: 10px;
+}
+.comment--mb10 {
+  margin-bottom: 10px;
+}
+.comment--tRight {
+  text-align: right;
+}
+/* detail */
+.comment__header {
+  background: #F0F6F3;
+  width: 100%;
+}
+.comment__content {
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+/* form */
+.comment__form label,
+.comment__form input {
+  border: 1px solid #E8E8E8;
+  border-radius: 3px;
+  padding: 5px 10px;
+}
+.comment__content--input {
+  width: 100%;
+}
+.comment__submitReply {
+  cursor: pointer;
+}
