@@ -9,6 +9,5 @@ AV.init({
 
 new Comment({
 	permalink: $('#wgt-comment').data('permalink'),
-	dbComment: 'Comment',
-	dbReply: 'Reply'
+	dbComment: 'Comment'
 });

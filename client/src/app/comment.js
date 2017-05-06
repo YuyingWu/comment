@@ -23,7 +23,10 @@ class Comment {
 
 		if(!this.checkSetup()){
 			return;
-		}
+		};
+
+		//用户信息
+		this.sessionAuthor = 'commentAuthor';
 
 		this.comments = {};
 
@@ -33,6 +36,7 @@ class Comment {
 	formatData(results) {
 		const formatSingle = (data) => {
 			let { id, createdAt } = data;
+
 			let obj = {
 				id,
 				createdAt,
@@ -73,15 +77,19 @@ class Comment {
 			list.map(c => {
 				this.comments[c.id] = c;
 			});
-			console.log(this.comments);
 
 			this.render(list);
 		}, function (error) {
-			console.log('query error');
+			this.errorDeal(error);
 		});
 
+		// 初始化author
+		const recordAuthor = sessionStorage.getItem(this.sessionAuthor);
+		if(recordAuthor){
+			$('.comment__contentAuthor').val(recordAuthor);
+		}
+
 		this.eventHandler();
-		this.submitHandler();
 	}
 	eventHandler() {
 		const self = this;
@@ -97,6 +105,50 @@ class Comment {
 
 		const commentForm = $('#comment-form');
 
+		// 评论提交
+		commentForm.on('click', '#comment-box-submit', (e) => {
+			e.preventDefault();
+
+			const submitBtn = $(e.target);
+
+			if(submitBtn.hasClass('disabled')){
+				return;
+			}
+
+			const params = commentForm.serializeArray();
+
+			this.lockSubmit(true);
+
+			if(this.validate(params)){
+				// 记录当前用户信息
+				const currentAuthor = $('.comment__contentAuthor').val();
+				const recordAuthor = sessionStorage.getItem(this.sessionAuthor) || '';
+
+				if(currentAuthor != recordAuthor){
+					sessionStorage.setItem(this.sessionAuthor, currentAuthor);
+				}
+
+				// 提交
+				this.submitParams(params, (data) => {
+					this.saveToDB(this.props.dbComment, data, (comment) => {
+						$('#comment-list').append(this.commentSingle(this.formatData(comment), 'comment__item'));
+
+						// reset content
+						this.resetPlaceholder('content');
+
+						this.lockSubmit(false);
+					}, (error) => {
+						this.errorDeal(error);
+						this.lockSubmit(false);
+					});
+				});
+			}else{
+				this.displayErrorMsg('#comment-form-footer', '昵称和评论在一起才是最好的 ^_^');
+				this.lockSubmit(false);
+			}
+		});
+
+		// 回复
 		$('#comment-list').on('click', '.btn-reply', function(e) {
 			e.preventDefault();
 
@@ -117,95 +169,17 @@ class Comment {
 			}
 
 			// 更新parentId
-			commentForm.find('[name="parentId"]').val(element.data('id'));
-
-			console.log(commentForm.find('[name="parentId"]').val());
+			commentForm.find('[name="parentId"]').val(element.attr('data-id'));
 		});
 
+		// 回复取消
 		$('#wgt-comment').on('click', '.comment__replyCancel', function(){
 			const replyComment = $(this).parent('.comment__replyComment');
 
 			// 更新parentId
 			commentForm.find('[name="parentId"]').val('');
 			replyComment.remove();
-
-			console.log(commentForm.find('[name="parentId"]').val());
 		});
-
-		// 回复
-		/*$('#comment-list').on('click', '.btn-reply', function(e){
-			e.preventDefault();
-
-			const element = $(this);
-			const id = element.data('id');
-			// const commentItem = element.parents('.comment__item');
-			const commentBlock = element.parents('article');
-			let replyForm = commentBlock.find('.reply-form');
-
-			if(replyForm.length){
-				replyForm.toggle();
-				return;
-			}
-
-			replyForm = $('<footer class="reply-form"/>').html(`
-				<form class="comment__form">
-					<label for="author">
-						<span>Authur: </span>
-						<input type="text" 
-							name="author" 
-							class="comment-author" 
-							required 
-							max-length="15">
-					</label>
-					<label for="content">
-						<span>Content: </span>
-						<input type="text" 
-							name="content" 
-							class="comment-content" 
-							required
-							max-length="150">
-					</label>
-					<a href="#" class="reply-submit" data-id="${id}">提交</a>
-				</form>
-			`);
-
-			replyForm.appendTo(commentBlock[0]);
-		});
-
-		// 回复提交
-		$('#comment-list').on('click', '.reply-submit', function(e){
-			e.preventDefault();
-
-			const element = $(this);
-			const formElement = element.parents('form')[0];
-			const params = $(formElement).serializeArray();
-			const parentId = element.data('id');
-			const commentBlock = element.parents('article');
-
-			if(self.validate(params)){
-				self.submitParams(params, (data) => {
-					data.parentId = parentId;
-
-					self.saveToDB(self.props.dbReply, data, (reply) => {
-						// const parentElement = $('#comment-' + parentId);
-						const replyFormat = self.formatData(reply);
-
-						$(self.commentSingle(replyFormat, 'comment__reply')).insertAfter(commentBlock);
-
-						// 干掉reply-form
-						const replyForm = element.parents('.reply-form');
-
-						self.resetPlaceholder('content');
-
-						replyForm.hide();
-					}, (error) => {
-						self.errorDeal(error);
-					});
-				});
-			}else{
-				console.log('invalid input');
-			}
-		});*/
 	}
 	validate(params) {
 		let result = false;
@@ -227,30 +201,16 @@ class Comment {
 
 		return result;
 	}
-	submitHandler() {
-		const formElement = $('#comment-form');
-
-		formElement.on('click', '#comment-box-submit', (e) => {
-			e.preventDefault();
-
-			const params = formElement.serializeArray();
-console.log(params);
-return;
-			if(this.validate(params)){
-				this.submitParams(params, (data) => {
-					this.saveToDB(this.props.dbComment, data, (comment) => {
-						$('#comment-list').append(this.commentSingle(this.formatData(comment), 'comment__item'));
-					}, (error) => {
-						this.errorDeal(error);
-					});
-				});
-			}else{
-				console.log('invalid input');
-			}
-		});
-	}
 	errorDeal(error){
-		console.log(error);
+		console.error(error);
+
+		if(error && error.code && error.error){
+			alert(`咦，请求出错了😱😱😱麻烦截图联系管理员，错误信息为 -> code:${error.code}, error:${error.error}。`);
+		}else{
+			alert(`咦，请求出错了，麻烦联系管理员😱😱😱`);
+		}
+		
+		this.lockSubmit(false);
 	}
 	saveToDB(db, data, onSuccess) {
 		// 声明类型
@@ -330,14 +290,37 @@ return;
 			console.log(err);
 		});*/
 	}
+	lockSubmit(isToLock){
+		const form = $('#comment-form');
+		const submitBtn = $('#comment-box-submit');
+
+		if(isToLock){
+			form.find('input').each(function(){
+				$(this).attr('disabled', 'disabled');
+			});
+
+			submitBtn.addClass('disabled');
+		}else{
+			form.find('input').each(function(){
+				$(this).removeAttr('disabled');
+				submitBtn.removeClass('disabled');
+			});
+		}
+	}
 	resetPlaceholder(type) {
 		switch(type) {
 			case 'author':
-				$('.comment-author').val('');
+				$('.comment__contentAuthor').val('');
 				break;
 			case 'content':
-				$('.comment-content').val('');
+				$('.comment__contentInput').val('');
 				break;
+		};
+
+		// 自动磨掉回复内容
+		const replyCancel = $('.comment__replyCancel');
+		if(replyCancel.length){
+			replyCancel.click();
 		}
 	}
 	commentSingle(item, className) {
@@ -354,15 +337,15 @@ return;
 				if(pContent.length > 20){
 					pContent = pContent.substring(0, 20) + '...';
 				}
-			}
 
-			parentContent = `
-				<blockquote class="comment--fontsizeMeta comment__quote">
-					<p>${ pContent }
-						<span class="comment--colorAccent">${ c.author }</span>
-					</p>
-				</blockquote>
-			`;
+				parentContent = `
+					<blockquote class="comment--fontsizeMeta comment__quote">
+						<p>${ pContent }
+							<span class="comment--colorAccent">${ c.author }</span>
+						</p>
+					</blockquote>
+				`;
+			}
 		}
 
 		return `
@@ -396,7 +379,7 @@ return;
 		Object.keys(data).map(key => {
 			const item = data[key];
 
-			if(!item.author || !item.content){
+			if(!item.author || !item.content || !item.display){
 				return;
 			}
 
@@ -408,6 +391,24 @@ return;
 		});
 
 		$('#comment-list').html(tpl);
+	}
+	displayErrorMsg(containerId, msg) {
+		let errorTip = $('#comment-form-error');
+
+		if(!errorTip.length){
+			errorTip = $('<p/>').attr({
+				class: 'comment--grid comment--fontsizeMeta comment--colorError',
+				id: 'comment-form-error'
+			}).html(msg);
+
+			$(containerId).append(errorTip);
+		}else{
+			errorTip.html(msg).show();
+		}
+
+		setTimeout(() => {
+			errorTip.hide();
+		}, 2000);
 	}
 }
 

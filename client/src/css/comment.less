@@ -3,6 +3,7 @@
 @borderRadius: 3px;
 @accentColor: #00ab6b;
 @accentLightColor: #F0F6F3;
+@disabledColor: #F5F5F5;
 /* reset */
 .wgt-comment{
 	p,
@@ -21,6 +22,9 @@
 /* base */
 .comment--colorAccent{
 	color: @accentColor;
+}
+.comment--colorError{
+	color: red;
 }
 .comment--colorMeta{
 	color: #8F8F8F;
@@ -72,24 +76,33 @@
 /* form */
 .comment__form{
 	label,
-	/*a{
-		display: block;
-		margin-bottom: 10px;
-	}*/
 	input{
 		border: 1px solid @borderColor;
 		border-radius: @borderRadius;
 		padding: 5px 10px;
+		outline: 0;
+		&:disabled{
+			background-color: @disabledColor;
+		}
 	}
 }
-.comment__content--input{
-	width: 96%;
+.comment__contentInput{
+	width: calc(~"100% - 20px");
 }
 .comment__submitReply{
 	cursor: pointer;
+	&.disabled{
+		background: @disabledColor;
+		cursor: wait;
+		color: #000;
+		&:hover{
+			background: @disabledColor;
+			color: #000;
+		}
+	}
 }
 .comment__replyComment{
-	width: 98%;
+	width: calc(~"100% - 8px");
 	padding: 3px 4px;
 	background: @accentLightColor;
 	cursor: pointer;
